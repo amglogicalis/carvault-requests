@@ -1,5 +1,5 @@
 // =========================================================================
-// TERRA ECOSYSTEM â€” WEBBL MORPH HANDLER FOR CARVAULT
+// TERRA ECOSYSTEM — WEBBL MORPH HANDLER FOR CARVAULT
 // Processes incoming vehicle / brand addition requests, executes middleware validation,
 // and automatically creates official issues in amglogicalis/carvault.
 // =========================================================================
@@ -7,16 +7,27 @@
 module.exports = async function handler(payload) {
   const https = require('https');
 
-  console.log('ðŸ¦‹ [Carvault Morph] Received request payload:', JSON.stringify(payload));
+  console.log('🦋 [Carvault Morph] Received request payload:', JSON.stringify(payload));
 
-  const text = typeof payload === 'string' ? payload : (payload.text || payload.data || payload.query || '');
-  const cleanText = (text || '').trim();
+  let raw = payload;
+  if (typeof payload === 'object' && payload !== null) {
+    raw = payload.text || payload.data || payload.query || '';
+  }
+  if (typeof raw === 'string' && raw.startsWith('{') && raw.endsWith('}')) {
+    try {
+      const p = JSON.parse(raw);
+      raw = p.text || p.data || raw;
+    } catch {
+      raw = raw.replace(/^\{text:\s*/i, '').replace(/\}$/, '');
+    }
+  }
+  const cleanText = String(raw || '').trim();
 
   if (!cleanText || cleanText.length < 3) {
     return {
       status: 400,
       success: false,
-      error: 'El texto es demasiado corto (mÃ­nimo 3 caracteres).'
+      error: 'El texto es demasiado corto (mínimo 3 caracteres).'
     };
   }
 
@@ -24,29 +35,29 @@ module.exports = async function handler(payload) {
     return {
       status: 400,
       success: false,
-      error: 'El texto excede el lÃ­mite de 250 caracteres.'
+      error: 'El texto excede el límite de 250 caracteres.'
     };
   }
 
   // Prepara el issue
-  const issueTitle = `[Propuesta de VehÃ­culo]: ${cleanText.slice(0, 60)}`;
-  const issueBody = `### ðŸš— Solicitud de Modelo / Marca en Carvault
+  const issueTitle = `[Propuesta de Vehículo]: ${cleanText.slice(0, 60)}`;
+  const issueBody = `### 🚗 Solicitud de Modelo / Marca en Carvault
 
-**DescripciÃ³n solicitada por el usuario:**
+**Descripción solicitada por el usuario:**
 > ${cleanText}
 
 ---
-*Procesado automÃ¡ticamente mediante el Morph Serverless del Ecosistema Terra.*
+*Procesado automáticamente mediante el Morph Serverless del Ecosistema Terra.*
 - **Fecha:** ${new Date().toISOString()}
 - **Filtro Middleware:** Verificado y aprobado`;
 
   const token = process.env.GITHUB_TOKEN;
   if (!token) {
-    console.error('âŒ GITHUB_TOKEN no configurado en el runner');
+    console.error('❌ GITHUB_TOKEN no configurado en el runner');
     return {
       status: 500,
       success: false,
-      error: 'Falta token de autenticaciÃ³n en el entorno del Morph.'
+      error: 'Falta token de autenticación en el entorno del Morph.'
     };
   }
 
@@ -78,16 +89,16 @@ module.exports = async function handler(payload) {
         try {
           const parsed = JSON.parse(body);
           if (res.statusCode >= 200 && res.statusCode < 300) {
-            console.log(`âœ… Issue #${parsed.number} creada con Ã©xito: ${parsed.html_url}`);
+            console.log(`✅ Issue #${parsed.number} creada con éxito: ${parsed.html_url}`);
             resolve({
               status: 200,
               success: true,
-              message: `Â¡Propuesta registrada con Ã©xito en el catÃ¡logo! (Issue #${parsed.number})`,
+              message: `¡Propuesta registrada con éxito en el catálogo! (Issue #${parsed.number})`,
               issueNumber: parsed.number,
               issueUrl: parsed.html_url
             });
           } else {
-            console.error('âŒ GitHub API Error:', body);
+            console.error('❌ GitHub API Error:', body);
             resolve({
               status: res.statusCode,
               success: false,
@@ -98,14 +109,14 @@ module.exports = async function handler(payload) {
           resolve({
             status: 500,
             success: false,
-            error: 'Respuesta invÃ¡lida de la API de GitHub.'
+            error: 'Respuesta inválida de la API de GitHub.'
           });
         }
       });
     });
 
     req.on('error', (err) => {
-      console.error('âŒ Error de conexiÃ³n:', err);
+      console.error('❌ Error de conexión:', err);
       resolve({
         status: 500,
         success: false,
