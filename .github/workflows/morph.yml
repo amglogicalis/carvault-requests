@@ -12,7 +12,7 @@ on:
 jobs:
   run-morph:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -36,4 +36,4 @@ jobs:
           '
         env:
           PAYLOAD: ${{ github.event.client_payload.payload || github.event.inputs.payload || '{}' }}
-          IDLE_TIMEOUT_MIN: '10'
+          GITHUB_TOKEN: ${{ secrets.CARVAULT_PAT || secrets.GITHUB_TOKEN }}
