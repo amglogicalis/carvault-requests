@@ -1,0 +1,39 @@
+name: WEBBL Morph Execution
+on:
+  repository_dispatch:
+    types: [morph-run]
+  workflow_dispatch:
+    inputs:
+      payload:
+        description: 'JSON Payload'
+        required: false
+        default: '{}'
+
+jobs:
+  run-morph:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run Morph Handler
+        run: |
+          node -e '
+            const handler = require("./index.js");
+            const payload = JSON.parse(process.env.PAYLOAD || "{}");
+            Promise.resolve(handler(payload)).then(res => {
+              console.log("::WEBBL_RESULT_START::");
+              console.log(JSON.stringify(res));
+              console.log("::WEBBL_RESULT_END::");
+            }).catch(err => {
+              console.error(err);
+              process.exit(1);
+            });
+          '
+        env:
+          PAYLOAD: ${{ github.event.client_payload.payload || github.event.inputs.payload || '{}' }}
+          IDLE_TIMEOUT_MIN: '10'
